@@ -39,7 +39,7 @@ struct VideoPlayerContainer: UIViewControllerRepresentable {
 
 
 
-struct MainVideoView: View {
+public struct VideoPlayerView: View {
     
     
     
@@ -73,7 +73,7 @@ struct MainVideoView: View {
     @State private var activeSide: String? = nil   // "left" or "right"
     @State private var showOverlay = false
     
-    var body: some View {
+    public var body: some View {
         
         
         
