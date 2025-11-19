@@ -49,7 +49,7 @@ public struct VideoPlayerView: View {
     private var config: VideoConfig
     var delegate: VideoViewDelegate?
     
-    init(config: VideoConfig,
+   public init(config: VideoConfig,
          
          delegate: VideoViewDelegate? = nil) {
         

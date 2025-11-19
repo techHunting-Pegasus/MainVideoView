@@ -452,10 +452,10 @@ struct OrientationHelper {
     }
 }
 
-struct VideoConfig {
-    let url: URL
-    var autoplay: Bool = true
-    var showControlsOnStart: Bool = true
+public struct VideoConfig {
+  public  let url: URL
+  public  var autoplay: Bool = true
+  public  var showControlsOnStart: Bool = true
 }
 
 
