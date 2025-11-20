@@ -6,33 +6,33 @@ import AVKit
 import AVFoundation
 import UIKit
 
-struct VideoPlayerContainer: UIViewControllerRepresentable {
+public struct VideoPlayerContainer: UIViewControllerRepresentable {
     
     let player: AVPlayer
-        let config: VideoPlayerConfig
-        
-        class Coordinator: NSObject, AVPlayerViewControllerDelegate {}
-
-        func makeCoordinator() -> Coordinator { Coordinator() }
-
-        func makeUIViewController(context: Context) -> AVPlayerViewController {
-            let vc = AVPlayerViewController()
-            vc.player = player
-            vc.showsPlaybackControls = false
-            vc.videoGravity = config.videoGravity ?? .resizeAspect
-            vc.allowsPictureInPicturePlayback = config.allowsPiP ?? true
-            vc.delegate = context.coordinator
-            return vc
-        }
-
-        func updateUIViewController(_ uiViewController: AVPlayerViewController, context: Context) {}
-
+    let config: VideoPlayerConfig
+    
+    public  class Coordinator: NSObject, AVPlayerViewControllerDelegate {}
+    
+    public func makeCoordinator() -> Coordinator { Coordinator() }
+    
+    public   func makeUIViewController(context: Context) -> AVPlayerViewController {
+        let vc = AVPlayerViewController()
+        vc.player = player
+        vc.showsPlaybackControls = false
+        vc.videoGravity = config.videoGravity ?? .resizeAspect
+        vc.allowsPictureInPicturePlayback = config.allowsPiP ?? true
+        vc.delegate = context.coordinator
+        return vc
+    }
+    
+    public    func updateUIViewController(_ uiViewController: AVPlayerViewController, context: Context) {}
+    
 }
 
 
 public struct VideoViewPlayer: View {
     @ObservedObject var vm: VideoPlayerViewModel
-        let config: VideoPlayerConfig
+    let config: VideoPlayerConfig
     let screenWidth = UIScreen.main.bounds.width
     let screenHeight = UIScreen.main.bounds.height
     @State private var brightness: CGFloat = UIScreen.main.brightness
@@ -164,21 +164,23 @@ public struct VideoViewPlayer: View {
                     if (!vm.isfullScreen){
                         PotraghtControle(vm: vm, delegate: delegate)
                     }else{
-//                        LandscapdeControls(vm: vm, delegate: delegate, screenwidth: screenWidth, screenheight: screenHeight, setting: $showSettings)
-//                            .frame(width: geo.size.width)
+                        LandscapdeControls(vm: vm, delegate: delegate, screenwidth: screenWidth, screenheight: screenHeight, setting: $showSettings)
+                            .frame(width: geo.size.width)
                     }
                 }
 
                 
-//                    Button {
-//                        vm.playPause()
-//                    } label: {
-//                        if vm.isPlaying {
-//                            config.pauseButtonView ?? AnyView(defaultPauseButton)
-//                        } else {
-//                            config.playButtonView ?? AnyView(defaultPlayButton)
-//                        }
-//                    }
+
+            }
+            .frame(
+                width:  geo.size.width,
+                height: vm.isfullScreen ? screenWidth : geo.size.width * 9 / 16
+            )
+            .background(Color.black)
+            .onTapGesture {
+                withAnimation {
+                    vm.showControls.toggle()
+                }
                 
             }
         }
@@ -282,5 +284,197 @@ struct PotraghtControle : View {
             .padding()
             
         }
+    }
+}
+struct LandscapdeControls: View {
+    @ObservedObject var vm: VideoPlayerViewModel
+    var delegate: VideoViewDelegate?
+    var screenwidth: CGFloat
+    var screenheight: CGFloat
+    @Binding var setting: Bool
+    @State var sliderValue: Double = 0.0
+    
+    
+    
+    
+    var body: some View {
+        GeometryReader { geo in
+            VStack {
+                
+                // MARK: Loader when buffering
+                if !vm.isBuffering {
+                    
+                    // MARK: Playback Controls
+                    HStack(spacing: 40) {
+                        Button { vm.rewind10s() } label: {
+                            Image(systemName: "gobackward.10")
+                                .font(.title)
+                                .tint(.white)
+                        }
+                        
+                        if vm.isBuffering {
+                            ZStack {
+                                Color.black.opacity(0.3)
+                                    .ignoresSafeArea()
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                    .scaleEffect(1.8)
+                            }
+                            .transition(.opacity)
+                            .animation(.easeInOut(duration: 0.3), value: vm.isBuffering)
+                        }else{
+                            Button { vm.togglePlayPause() } label: {
+                                Image(systemName: vm.isPlaying ? "pause.fill" : "play.fill")
+                                    .font(.title)
+                                    .tint(.white)
+                            }
+                        }
+                       
+                        Button { vm.forward10s() } label: {
+                            Image(systemName: "goforward.10")
+                                .font(.title)
+                                .tint(.white)
+                        }
+                    }
+                    .padding(.top, screenwidth / 2.5)
+                }
+                
+                Spacer()
+                
+                VStack {
+                    // MARK: Seek Slider
+                    
+                    
+                    
+                    
+                    HStack(alignment: .center) {
+                        
+                        TappableSlider(value: $vm.progress, range: 0...vm.duration,onEditingChanged: { editing in
+                            vm.isScrubbing = editing
+                            if !editing {
+                                vm.seek(to: vm.progress) // Seek when drag ends
+                            }
+                        })
+                        
+                        Text("\(vm.formattedTime(from: vm.progress))/\(vm.formattedTime(from: vm.duration))")
+                            .font(.caption)
+                            .foregroundColor(.white)
+                    }
+                    .padding(.bottom, 20)
+                    
+                    // MARK: Bottom Controls
+                    HStack {
+                        // Volume Controls
+                        HStack {
+                            Image(systemName: vm.ismute ? "speaker.slash.fill" : "speaker.fill")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 30, height: 30)
+                                .foregroundColor(.white)
+                                .onTapGesture { vm.toggleMute() }
+                                .padding(.trailing, 20)
+                            
+                            Slider(value: Binding(
+                                get: { Double(vm.volume) },
+                                set: { vm.volume = Float($0) }
+                            ), in: 0...1)
+                            .accentColor(.red)
+                            .tint(.white)
+                            .frame(width: 150, height: 20)
+                        }
+                        
+                        Spacer()
+                        
+                        // Action Buttons
+                        HStack(spacing: 20) {
+                            Image(systemName: vm.isfilled ? "arrow.up.left.and.arrow.down.right" : "arrow.down.right.and.arrow.up.left")
+                                .resizable()
+                                .frame(width: 30, height: 30)
+                                .foregroundColor(.white)
+                                .onTapGesture {
+                                    
+                                    vm.didTapFillScreen()
+                                }
+                            
+                            Image(systemName: "gear")
+                                .resizable()
+                                .frame(width: 30, height: 30)
+                                .foregroundColor(.white)
+                                .onTapGesture {
+                                    withAnimation { setting.toggle() }
+                                }
+                            
+                            Image(systemName: "viewfinder")
+                                .resizable()
+                                .frame(width: 30, height: 30)
+                                .foregroundColor(.white)
+                                .onTapGesture {
+                                    vm.toggleFullscreen()
+                                    delegate?.isfullscren(isfull: vm.isfullScreen)
+                                }
+                        }
+                    }
+                    
+                }
+                .padding()
+            }
+            
+        }
+        
+    }
+    
+}
+
+struct ContentView: View {
+  
+    private let viewModel = VideoPlayerViewModel(
+           url: URL(string: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8")!
+       )
+       
+       private let config = VideoPlayerConfig(
+           videoGravity: .resizeAspectFill
+       )
+    
+    var body: some View {
+        ZStack{
+            Color.black
+            VStack {
+                VideoViewPlayer(viewModel: viewModel, config: config)
+            }
+        }
+       
+        .padding()
+    }
+}
+
+#Preview {
+    ContentView()
+}
+struct TappableSlider: View {
+    @Binding var value: Double
+    var range: ClosedRange<Double>
+    var onEditingChanged: ((Bool) -> Void)? = nil
+    
+    var body: some View {
+        GeometryReader { geometry in
+            Slider(value: $value, in: range, onEditingChanged: { editing in
+                onEditingChanged?(editing)
+            })
+            .tint(.white)
+            .padding(.trailing, 20)
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { gesture in
+                        let percent = min(max(0, Double(gesture.location.x / geometry.size.width)), 1)
+                        let newValue = range.lowerBound + percent * (range.upperBound - range.lowerBound)
+                        self.value = newValue
+                        onEditingChanged?(true)
+                    }
+                    .onEnded { _ in
+                        onEditingChanged?(false)
+                    }
+            )
+        }
+        .frame(height: 40)
     }
 }

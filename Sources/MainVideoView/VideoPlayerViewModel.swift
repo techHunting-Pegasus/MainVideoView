@@ -21,6 +21,8 @@ public class VideoPlayerViewModel: ObservableObject {
     @Published var progress: Double = 0
     private var bitrateResetWorkItem: DispatchWorkItem?
     var delegate : VideoViewDelegate?
+    @Published var duration: Double = 0
+    @Published var isScrubbing = false
     
     
     public  init(url: URL,autoplay: Bool = true,delegate:VideoViewDelegate? = nil) {
@@ -143,6 +145,27 @@ public class VideoPlayerViewModel: ObservableObject {
             isfullScreen = true
         }
     }
+    
+    @MainActor
+    func seek(to time: Double) {
+        isBuffering = true                 // << set immediately
+        updateProgressImmediately(to: time)
+        smoothSeek(to: time) { [weak self] in
+            self?.isScrubbing = false
+            self?.isBuffering = false      // << reset after seek completes
+        }
+    }
+    func formattedTime(from seconds: Double) -> String {
+        guard !seconds.isNaN && !seconds.isInfinite else { return "00:00" }
+        let mins = Int(seconds) / 60
+        let secs = Int(seconds) % 60
+        return String(format: "%02d:%02d", mins, secs)
+    }
+    
+    func didTapFillScreen() {
+        isfilled.toggle()
+    }
+
 }
 @MainActor
 
