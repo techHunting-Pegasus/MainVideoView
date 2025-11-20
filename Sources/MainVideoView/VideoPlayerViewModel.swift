@@ -69,7 +69,7 @@ public class VideoPlayerViewModel: ObservableObject {
            let target = max(0, current + seconds)
            player.seek(to: CMTime(seconds: target, preferredTimescale: 600))
        }
-    
+    @MainActor
     func rewind10s() {
         let current = player.currentTime().seconds
         let newTime = max(current - 10, 0)
@@ -79,6 +79,7 @@ public class VideoPlayerViewModel: ObservableObject {
             if shouldResume { self.player.play() }
         }
     }
+    @MainActor
     func forward10s() {
         guard let duration = player.currentItem?.duration.seconds else { return }
         let current = player.currentTime().seconds
@@ -89,6 +90,7 @@ public class VideoPlayerViewModel: ObservableObject {
             if shouldResume { self.player.play() }
         }
     }
+    @MainActor
     private func updateProgressImmediately(to time: Double) {
         // Immediately reflect the new slider position
         
