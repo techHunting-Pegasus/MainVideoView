@@ -30,7 +30,7 @@ struct VideoPlayerContainer: UIViewControllerRepresentable {
 }
 
 
-struct VideoViewPlayer: View {
+public struct VideoViewPlayer: View {
     @ObservedObject var viewModel: VideoPlayerViewModel
         let config: VideoPlayerConfig
         
