@@ -177,12 +177,12 @@ public struct VideoViewPlayer: View {
                 height: vm.isfullScreen ? screenWidth : geo.size.width * 9 / 16
             )
             .background(Color.black)
-            .onTapGesture {
-                withAnimation {
-                    vm.showControls.toggle()
-                }
-                
-            }
+//            .onTapGesture {
+//                withAnimation {
+//                    vm.showControls.toggle()
+//                }
+//                
+//            }
         }
         }
         
