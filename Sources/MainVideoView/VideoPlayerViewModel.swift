@@ -7,7 +7,7 @@ public class VideoPlayerViewModel: ObservableObject {
     let player: AVPlayer
     @Published var isPlaying: Bool = false
     
-    init(url: URL) {
+    public  init(url: URL) {
         self.player = AVPlayer(url: url)
     }
     

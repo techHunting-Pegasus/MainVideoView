@@ -19,8 +19,8 @@ struct VideoPlayerContainer: UIViewControllerRepresentable {
             let vc = AVPlayerViewController()
             vc.player = player
             vc.showsPlaybackControls = false
-            vc.videoGravity = config.videoGravity
-            vc.allowsPictureInPicturePlayback = config.allowsPiP
+            vc.videoGravity = config.videoGravity ?? .resizeAspect
+            vc.allowsPictureInPicturePlayback = config.allowsPiP ?? true
             vc.delegate = context.coordinator
             return vc
         }
@@ -43,7 +43,7 @@ public struct VideoViewPlayer: View {
            ZStack {
                VideoPlayerContainer(player: viewModel.player, config: config)
 
-               if config.showCenterButton {
+               
                    Button {
                        viewModel.playPause()
                    } label: {
@@ -53,7 +53,7 @@ public struct VideoViewPlayer: View {
                            config.playButtonView ?? AnyView(defaultPlayButton)
                        }
                    }
-               }
+               
            }
        }
     private var defaultPlayButton: some View {

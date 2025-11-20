@@ -10,11 +10,11 @@ import SwiftUI
 import AVKit
 
 public struct VideoPlayerConfig {
-    public var videoGravity: AVLayerVideoGravity
-    public var allowsPiP: Bool
+    public var videoGravity: AVLayerVideoGravity?
+    public var allowsPiP: Bool?
     
     // Custom play/pause button
-    public var showCenterButton: Bool
+    public var showCenterButton: Bool?
     public var playButtonView: AnyView?
     public var pauseButtonView: AnyView?
 
