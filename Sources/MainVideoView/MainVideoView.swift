@@ -31,7 +31,7 @@ public struct VideoPlayerContainer: UIViewControllerRepresentable {
 
 
 public struct VideoViewPlayer: View {
-    @ObservedObject var vm: VideoPlayerViewModel
+    @StateObject private var vm: VideoPlayerViewModel
     let config: VideoPlayerConfig
     let screenWidth = UIScreen.main.bounds.width
     let screenHeight = UIScreen.main.bounds.height
@@ -43,9 +43,9 @@ public struct VideoViewPlayer: View {
     @State var showSettings : Bool = false
     let delegate: VideoViewDelegate?
         
-        public init(viewModel: VideoPlayerViewModel, config: VideoPlayerConfig = .init(), delegate: VideoViewDelegate? = nil) {
+    public init( config: VideoPlayerConfig , delegate: VideoViewDelegate? = nil) {
             self.delegate = delegate
-            self.vm = viewModel
+        self._vm = StateObject(wrappedValue: VideoPlayerViewModel(url: config.url, autoplay: config.autoplay ?? true))
             self.config = config
             let thumbImage = UIImage(systemName: "circle.fill")?
                 .withConfiguration(UIImage.SymbolConfiguration(pointSize: 20))
@@ -177,12 +177,30 @@ public struct VideoViewPlayer: View {
                 height: vm.isfullScreen ? screenWidth : geo.size.width * 9 / 16
             )
             .background(Color.black)
-//            .onTapGesture {
-//                withAnimation {
-//                    vm.showControls.toggle()
-//                }
-//                
-//            }
+            .onChange(of: config.url) { oldValue, newURL in
+                vm.updatePlayer(url: newURL)
+            }
+            .onChange(of: showSettings) { oldValue, newValue in
+                if newValue {
+                    if (vm.isPlaying)
+                    {
+                        vm.togglePlayPause()
+                        vm.showControls = false
+                    }else{
+                        vm.showControls = false
+                    }
+                }else{
+                    
+                    vm.showControls = true
+                }
+            }
+            .onChange(of: vm.showControls) { oldValue, newValue in
+                if newValue == false && vm.isPlaying {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 5, execute: {
+                        vm.showControls.toggle()
+                    })
+                }
+            }
         }
         }
         
@@ -427,19 +445,19 @@ struct LandscapdeControls: View {
 
 struct ContentView: View {
   
-    private let viewModel = VideoPlayerViewModel(
-           url: URL(string: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8")!
-       )
-       
-       private let config = VideoPlayerConfig(
-           videoGravity: .resizeAspectFill
-       )
+    private let url: URL
+        private let config: VideoPlayerConfig
+
+        init() {
+            self.url = URL(string: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8")!
+            self.config = VideoPlayerConfig(url: self.url)
+        }
     
     var body: some View {
         ZStack{
             Color.black
             VStack {
-                VideoViewPlayer(viewModel: viewModel, config: config)
+                VideoViewPlayer(config: config)
             }
         }
        

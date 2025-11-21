@@ -165,10 +165,111 @@ public class VideoPlayerViewModel: ObservableObject {
     func didTapFillScreen() {
         isfilled.toggle()
     }
+    private var timeObserver: Any?
+    @Published var statusObserver: NSKeyValueObservation?
+    @Published var timeControlObserver: NSKeyValueObservation?
+    func updatePlayer(url: URL) {
+        // Remove old observers
+        if let observer = timeObserver {
+            player.removeTimeObserver(observer)
+            timeObserver = nil
+        }
+        timeControlObserver?.invalidate()
+        statusObserver?.invalidate()
+        NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: player.currentItem)
+        
+        // Create new AVPlayerItem
+        let asset = AVURLAsset(url: url)
+        let item = AVPlayerItem(asset: asset)
+        
+        item.preferredPeakBitRate = 50_000
+        
+        player.replaceCurrentItem(with: item)
+        
+        // Reattach observers
+        observePlayer()
+        observeEndOfVideo()
+        addTimeObserver()
+        
+        player.play()
+        isPlaying = true
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: {
+            item.preferredPeakBitRate = 0
+        })
+    }
+    private func  observePlayer() {
+        // Observe playback status
+        timeControlObserver = player.observe(\.timeControlStatus, options: [.new, .initial]) { [weak self] player, _ in
+            guard let self = self else { return }
+            DispatchQueue.main.async {
+                
+                
+                self.isPlaying = player.timeControlStatus == .playing
+                self.isBuffering = player.timeControlStatus == .waitingToPlayAtSpecifiedRate
+   
+            }
+        }
+        
+        // Observe player item status
+        statusObserver = player.currentItem?.observe(\.status, options: [.new, .initial]) { [weak self] item, _ in
+            guard let self = self else { return }
+            DispatchQueue.main.async {
+                if item.status == .failed {
+                    print("Player item failed: \(String(describing: item.error))")
+                } else if item.status == .readyToPlay {
+                    self.duration = item.duration.seconds
+                }
+            }
+        }
+    }
+    
+//    private func addTimeObserver() {
+//        timeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 1, preferredTimescale: 600), queue: .main) { [weak self] time in
+//            guard let self = self else { return }
+//            if !self.isScrubbing {
+//                       self.progress = time.seconds
+//                   }
+//            if let item = self.player.currentItem {
+//                self.duration = item.asset.duration.seconds
+//            }
+//        }
+//    }
+    private func addTimeObserver() {
+        timeObserver = player.addPeriodicTimeObserver(
+            forInterval: CMTime(seconds: 1, preferredTimescale: 600),
+            queue: .main
+        ) { [weak self] time in
+            guard let self = self else { return }
+
+            // Progress update is safe
+            if !self.isScrubbing {
+                self.progress = time.seconds
+            }
+
+            // Duration update MUST be done on main actor
+            Task { @MainActor in
+                if let item = self.player.currentItem {
+                    self.duration = item.asset.duration.seconds
+                }
+            }
+        }
+    }
+    
+    private func observeEndOfVideo() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(playerDidFinishPlaying),
+            name: .AVPlayerItemDidPlayToEndTime,
+            object: player.currentItem
+        )
+    }
+    @objc private func playerDidFinishPlaying() {
+        delegate?.videoDidFinish()
+    }
 
 }
 @MainActor
-
 struct OrientationHelper {
     static func setOrientation(_ orientation: UIInterfaceOrientationMask) {
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene else { return }
