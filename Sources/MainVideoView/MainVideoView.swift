@@ -6,28 +6,52 @@ import AVKit
 import AVFoundation
 import UIKit
 
+//public struct VideoPlayerContainer: UIViewControllerRepresentable {
+//    
+//    let player: AVPlayer
+//    let config: VideoPlayerConfig
+//    
+//    public  class Coordinator: NSObject, AVPlayerViewControllerDelegate {}
+//    
+//    public func makeCoordinator() -> Coordinator { Coordinator() }
+//    
+//    public   func makeUIViewController(context: Context) -> AVPlayerViewController {
+//        let vc = AVPlayerViewController()
+//        vc.player = player
+//        vc.showsPlaybackControls = false
+//        vc.videoGravity = config.videoGravity ?? .resizeAspect
+//        vc.allowsPictureInPicturePlayback = config.allowsPiP ?? true
+//        vc.delegate = context.coordinator
+//        return vc
+//    }
+//    
+//    public    func updateUIViewController(_ uiViewController: AVPlayerViewController, context: Context) {}
+//    
+//}
+
 public struct VideoPlayerContainer: UIViewControllerRepresentable {
-    
     let player: AVPlayer
-    let config: VideoPlayerConfig
+    var videoGravity: AVLayerVideoGravity = .resizeAspect
+    var allowsPiP: Bool = true
+    var delegate: AVPlayerViewControllerDelegate?
     
-    public  class Coordinator: NSObject, AVPlayerViewControllerDelegate {}
-    
-    public func makeCoordinator() -> Coordinator { Coordinator() }
-    
-    public   func makeUIViewController(context: Context) -> AVPlayerViewController {
-        let vc = AVPlayerViewController()
-        vc.player = player
-        vc.showsPlaybackControls = false
-        vc.videoGravity = config.videoGravity ?? .resizeAspect
-        vc.allowsPictureInPicturePlayback = config.allowsPiP ?? true
-        vc.delegate = context.coordinator
-        return vc
+    public  func makeUIViewController(context: Context) -> AVPlayerViewController {
+        let controller = AVPlayerViewController()
+        controller.player = player
+        controller.showsPlaybackControls = false
+        controller.videoGravity = videoGravity
+        controller.allowsPictureInPicturePlayback = allowsPiP
+        controller.delegate = delegate
+        controller.canStartPictureInPictureAutomaticallyFromInline = true
+        return controller
     }
     
-    public    func updateUIViewController(_ uiViewController: AVPlayerViewController, context: Context) {}
-    
+    public  func updateUIViewController(_ uiViewController: AVPlayerViewController, context: Context) {
+        uiViewController.videoGravity = videoGravity
+        uiViewController.allowsPictureInPicturePlayback = allowsPiP
+    }
 }
+
 
 
 public struct VideoViewPlayer: View {
@@ -52,14 +76,15 @@ public struct VideoViewPlayer: View {
                 .withTintColor(.white, renderingMode: .alwaysOriginal)
             UISlider.appearance().setThumbImage(thumbImage, for: .normal)
         }
-    
-        
     public var body: some View {
         GeometryReader { geo in
+            
             ZStack {
-                VideoPlayerContainer(player: vm.player, config: config)
+                
+                VideoPlayerContainer(player: vm.player,videoGravity: vm.isfilled ? .resizeAspectFill : .resizeAspect, delegate: VideoPiPDelegate())
                     .onTapGesture {
-                        withAnimation { /*vm.showControls.toggle() */}
+                        print("sfedferf")
+                        withAnimation { vm.showControls.toggle() }
                     }
                     .frame(
                         width: vm.isfilled ? screenHeight : geo.size.width,
@@ -103,6 +128,7 @@ public struct VideoViewPlayer: View {
                                 }
                             }
                     )
+                
                 if showOverlay, activeSide == "left" {
                     VStack(alignment:.leading) {
                         Slider(
@@ -146,6 +172,7 @@ public struct VideoViewPlayer: View {
                     .frame(maxWidth: .infinity, alignment: .trailing)
                     .transition(.opacity)
                 }
+                
                 if vm.isBuffering {
                         ZStack {
                             Color.black.opacity(0.4)
@@ -158,7 +185,6 @@ public struct VideoViewPlayer: View {
                         .animation(.easeInOut(duration: 0.25), value: vm.isBuffering)
                     }
                 
-                
                 if  vm.showControls && !showSettings {
                     
                     if (!vm.isfullScreen){
@@ -168,55 +194,53 @@ public struct VideoViewPlayer: View {
                             .frame(width: geo.size.width)
                     }
                 }
-
+//                if showSettings {
+//                    VideoSettingsOverlay(vm: vm, isVisible: $showSettings)
+//                        .transition(.move(edge: .trailing))
+//                }
                 
-
             }
             .frame(
                 width:  geo.size.width,
                 height: vm.isfullScreen ? screenWidth : geo.size.width * 9 / 16
             )
             .background(Color.black)
-            .onChange(of: config.url) { oldValue, newURL in
-                vm.updatePlayer(url: newURL)
+            .onTapGesture {
+                withAnimation {
+                    vm.showControls.toggle()
+                }
+                
             }
-            .onChange(of: showSettings) { oldValue, newValue in
-                if newValue {
-                    if (vm.isPlaying)
-                    {
-                        vm.togglePlayPause()
-                        vm.showControls = false
-                    }else{
-                        vm.showControls = false
-                    }
+            
+        }
+        .onChange(of: config.url) { oldValue, newURL in
+            vm.updatePlayer(url: newURL)
+        }
+        .onChange(of: showSettings) { oldValue, newValue in
+            if newValue {
+                if (vm.isPlaying)
+                {
+                    vm.togglePlayPause()
+                    vm.showControls = false
                 }else{
-                    
-                    vm.showControls = true
+                    vm.showControls = false
                 }
-            }
-            .onChange(of: vm.showControls) { oldValue, newValue in
-                if newValue == false && vm.isPlaying {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 5, execute: {
-                        vm.showControls.toggle()
-                    })
-                }
+            }else{
+                
+                vm.showControls = true
             }
         }
+        .onChange(of: vm.showControls) { oldValue, newValue in
+            if newValue == false && vm.isPlaying {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 5, execute: {
+                    vm.showControls.toggle()
+                })
+            }
+        }
+
         }
         
-    private var defaultPlayButton: some View {
-           Image(systemName: "play.circle.fill")
-               .resizable()
-               .frame(width: 60, height: 60)
-               .foregroundColor(.white)
-       }
 
-       private var defaultPauseButton: some View {
-           Image(systemName: "pause.circle.fill")
-               .resizable()
-               .frame(width: 60, height: 60)
-               .foregroundColor(.white)
-       }
 }
 
 public protocol VideoViewDelegate {
@@ -455,7 +479,6 @@ struct ContentView: View {
     
     var body: some View {
         ZStack{
-            Color.black
             VStack {
                 VideoViewPlayer(config: config)
             }

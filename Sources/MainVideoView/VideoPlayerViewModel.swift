@@ -3,6 +3,7 @@
 import AVFoundation
 import Combine
 import UIKit
+import AVKit
 
 public class VideoPlayerViewModel: ObservableObject {
     let player: AVPlayer
@@ -280,5 +281,23 @@ struct OrientationHelper {
                 print("Orientation update error: \(error.localizedDescription)")
             }
         }
+    }
+}
+
+public class VideoPiPDelegate: NSObject, AVPlayerViewControllerDelegate {
+    public   func playerViewControllerWillStartPictureInPicture(_ playerViewController: AVPlayerViewController) {
+        print("PiP will start")
+    }
+    
+    public  func playerViewControllerDidStartPictureInPicture(_ playerViewController: AVPlayerViewController) {
+        print("PiP started")
+    }
+    
+    public func playerViewControllerWillStopPictureInPicture(_ playerViewController: AVPlayerViewController) {
+        print("PiP will stop")
+    }
+    
+    public  func playerViewControllerDidStopPictureInPicture(_ playerViewController: AVPlayerViewController) {
+        print("PiP stopped")
     }
 }
