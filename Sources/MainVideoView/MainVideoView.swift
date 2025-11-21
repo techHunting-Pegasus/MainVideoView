@@ -6,28 +6,7 @@ import AVKit
 import AVFoundation
 import UIKit
 
-//public struct VideoPlayerContainer: UIViewControllerRepresentable {
-//    
-//    let player: AVPlayer
-//    let config: VideoPlayerConfig
-//    
-//    public  class Coordinator: NSObject, AVPlayerViewControllerDelegate {}
-//    
-//    public func makeCoordinator() -> Coordinator { Coordinator() }
-//    
-//    public   func makeUIViewController(context: Context) -> AVPlayerViewController {
-//        let vc = AVPlayerViewController()
-//        vc.player = player
-//        vc.showsPlaybackControls = false
-//        vc.videoGravity = config.videoGravity ?? .resizeAspect
-//        vc.allowsPictureInPicturePlayback = config.allowsPiP ?? true
-//        vc.delegate = context.coordinator
-//        return vc
-//    }
-//    
-//    public    func updateUIViewController(_ uiViewController: AVPlayerViewController, context: Context) {}
-//    
-//}
+
 
 public struct VideoPlayerContainer: UIViewControllerRepresentable {
     let player: AVPlayer
@@ -451,6 +430,9 @@ struct LandscapdeControls: View {
                                 .frame(width: 30, height: 30)
                                 .foregroundColor(.white)
                                 .onTapGesture {
+                                    if vm.isfilled{
+                                        vm.didTapFillScreen()
+                                    }
                                     vm.toggleFullscreen()
                                     delegate?.isfullscren(isfull: vm.isfullScreen)
                                 }
@@ -484,7 +466,6 @@ struct ContentView: View {
             }
         }
        
-        .padding()
     }
 }
 
