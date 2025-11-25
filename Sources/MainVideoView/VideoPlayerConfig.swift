@@ -9,6 +9,8 @@ import Foundation
 import SwiftUI
 import AVKit
 
+//MARK: Hide
+
 public struct VideoPlayerConfig {
     public var url : URL
     public var videoGravity: AVLayerVideoGravity?
